@@ -1,7 +1,20 @@
-# Create Database and Table in Hive 
+# Step 1: Download census data
+echo "Downloading census data..."
+wget https://www2.census.gov/programs-surveys/popest/datasets/2020-2022/counties/totals/co-est2022-alldata.csv -O census_data.csv
+
+# Step 2: Upload to HDFS
+echo "Uploading to HDFS..."
+hdfs dfs -mkdir -p /user/orgname/census_data
+hdfs dfs -put -f census_data.csv /user/orgname/census_data/
+
+# Step 3: Create Hive database, table, and load data
+echo "Creating Hive database and table..."
+hive -e "
 CREATE DATABASE IF NOT EXISTS census_db;
 
 USE census_db;
+
+DROP TABLE IF EXISTS county_population;
 
 CREATE TABLE IF NOT EXISTS county_population (
     SUMLEV INT,
@@ -83,18 +96,9 @@ CREATE TABLE IF NOT EXISTS county_population (
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY ','
 STORED AS TEXTFILE
-TBLPROPERTIES ("skip.header.line.count"="1");
+TBLPROPERTIES ('skip.header.line.count'='1');
 
+LOAD DATA INPATH '/user/orgname/census_data/census_data.csv' INTO TABLE county_population;
 
-
-
-# Load the data into the Hive table
-
-USE census_db;
-
-LOAD DATA INPATH '/user/hive/warehouse/census_db/census_real_data.csv' INTO TABLE county_population;
-
-
-# Check the data loaded Correctly
-SELECT COUNT(*) FROM county_population;
-
+SELECT COUNT(*) AS row_count FROM county_population;
+"
